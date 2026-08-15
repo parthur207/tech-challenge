@@ -1,0 +1,56 @@
+<form [formGroup]="formulario" (ngSubmit)="salvar()" class="formulario">
+  <h3>{{ editando ? 'Editar beneficiário' : 'Novo beneficiário' }}</h3>
+
+  <label>
+    Nome completo
+    <input type="text" formControlName="nomeCompleto" />
+  </label>
+  @if (formulario.controls.nomeCompleto.touched && formulario.controls.nomeCompleto.invalid) {
+    <p class="aviso erro">Informe um nome completo entre 3 e 120 caracteres.</p>
+  }
+
+  <label>
+    CPF
+    <input type="text" formControlName="cpf" maxlength="11" />
+  </label>
+  @if (formulario.controls.cpf.touched && formulario.controls.cpf.invalid) {
+    <p class="aviso erro">Informe um CPF com 11 dígitos numéricos, sem pontuação.</p>
+  }
+
+  <label>
+    Data de nascimento
+    <input type="date" formControlName="dataNascimento" />
+  </label>
+  @if (formulario.controls.dataNascimento.touched && formulario.controls.dataNascimento.invalid) {
+    <p class="aviso erro">Informe uma data de nascimento no passado.</p>
+  }
+
+  <label>
+    Plano
+    <select formControlName="planoId">
+      <option value="" disabled>Selecione um plano</option>
+      @for (plano of planos; track plano.id) {
+        <option [value]="plano.id">{{ plano.nome }}</option>
+      }
+    </select>
+  </label>
+
+  @if (editando) {
+    <label>
+      Situação
+      <select formControlName="status">
+        <option value="ATIVO">ATIVO</option>
+        <option value="INATIVO">INATIVO</option>
+      </select>
+    </label>
+  }
+
+  @if (erro()) {
+    <p class="aviso erro">{{ erro() }}</p>
+  }
+
+  <div class="acoes">
+    <button type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando...' : 'Salvar' }}</button>
+    <button type="button" (click)="cancelado.emit()">Cancelar</button>
+  </div>
+</form>

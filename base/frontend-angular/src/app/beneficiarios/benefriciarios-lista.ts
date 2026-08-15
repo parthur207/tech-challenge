@@ -7,9 +7,11 @@ import { Plano } from '../planos/plano';
 import { PlanoServico } from '../planos/plano-servico';
 import { Beneficiario, StatusBeneficiario } from './beneficiario';
 import { BeneficiarioServico } from './beneficiario-servico';
+import { BeneficiarioFormulario } from "./beneficiario-formulario";
 
 @Component({
   selector: 'app-beneficiarios-lista',
+    imports: [BeneficiarioFormulario],
   templateUrl: './beneficiarios-lista.html',
   styleUrl: './beneficiarios-lista.css'
 })

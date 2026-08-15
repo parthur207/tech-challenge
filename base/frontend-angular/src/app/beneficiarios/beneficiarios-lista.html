@@ -81,5 +81,12 @@
     </div>
   }
 
-
+  @if (mostrarFormulario()) {
+    <app-beneficiario-formulario
+      [beneficiario]="beneficiarioEmEdicao()"
+      [planos]="planos()"
+      (salvo)="aoSalvar()"
+      (cancelado)="fecharFormulario()"
+    />
+  }
 </section>
