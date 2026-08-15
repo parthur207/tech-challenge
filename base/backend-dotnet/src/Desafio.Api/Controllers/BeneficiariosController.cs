@@ -1,59 +1,96 @@
+using Desafio.Api.Api.Contratos;
+using Desafio.Api.Aplicacao;
 using Desafio.Api.Dominio;
-using Desafio.Api.Infraestrutura;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Desafio.Api.Controllers;
 
 [ApiController]
 [Route("beneficiarios")]
 [Produces("application/json")]
-public class BeneficiariosController : ControllerBase
+public class BeneficiariosController(BeneficiarioServico _servico) : ControllerBase
 {
-    private readonly AppDbContext _db;
-
-    public BeneficiariosController(AppDbContext db)
+    [HttpGet]
+    [ProducesResponseType<EnvelopePaginado<BeneficiarioResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Listar(
+        [FromQuery(Name = "pagina")] int? pagina,
+        [FromQuery(Name = "tamanho")] int? tamanho,
+        [FromQuery(Name = "status")] StatusBeneficiario? status,
+        [FromQuery(Name = "plano_id")] Guid? planoId,
+        CancellationToken cancellationToken)
     {
-        _db = db;
+        var resultado = await _servico.ListarAsync(pagina, tamanho, status, planoId, cancellationToken);
+
+        var envelope = new EnvelopePaginado<BeneficiarioResponse>(
+            resultado.Dados.Select(BeneficiarioResponse.De).ToList(),
+            resultado.Pagina,
+            resultado.Tamanho,
+            resultado.Total);
+
+        return Ok(envelope);
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
+    {
+        var beneficiario = await _servico.ObterAsync(id, cancellationToken);
+
+        return Ok(BeneficiarioResponse.De(beneficiario));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Criar([FromBody] Beneficiario beneficiario)
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Criar(
+        [FromBody] BeneficiarioRequestCriacao requisicao,
+        CancellationToken cancellationToken)
     {
-        if (beneficiario.Cpf.Length == 11)
-        {
-            // Mesmo modelo do PlanoServico: a garantia de unicidade é o índice único da
-            // tabela, e esta consulta prévia existe só para recusar o pedido antes de ele
-            // chegar no banco.
-            var existe = _db.Beneficiarios.Any(b => b.Cpf == beneficiario.Cpf);
+        var dados = new BeneficiarioCriacaoDados(
+            requisicao.NomeCompleto,
+            requisicao.Cpf,
+            requisicao.DataNascimento.ToString(),
+            requisicao.PlanoId!.Value);
 
-            if (!existe)
-            {
-                _db.Beneficiarios.Add(beneficiario);
-                await _db.SaveChangesAsync();
+        var beneficiario = await _servico.CriarAsync(dados, cancellationToken);
 
-                return Ok(beneficiario);
-            }
-
-            return BadRequest("CPF ja cadastrado");
-        }
-
-        return BadRequest("CPF invalido");
+        return CreatedAtAction(nameof(Obter), new { id = beneficiario.Id }, BeneficiarioResponse.De(beneficiario));
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Listar()
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Atualizar(
+        Guid id,
+        [FromBody] BeneficiarioRequestAtualizacao requisicao,
+        CancellationToken cancellationToken)
     {
-        var lista = await _db.Beneficiarios.ToListAsync();
+        var dados = new BeneficiarioAtualizacaoDados(
+            requisicao.NomeCompleto,
+            requisicao.DataNascimento.ToString(),
+            requisicao.PlanoId!.Value,
+            requisicao.Status);
 
-        // O plano é resolvido aqui, e não na consulta principal, porque o FindAsync usa o
-        // cache do contexto: a listagem continua fazendo uma única ida ao banco, qualquer
-        // que seja o tamanho da página.
-        foreach (var b in lista)
-        {
-            b.Plano = await _db.Planos.FindAsync(b.PlanoId);
-        }
+        var beneficiario = await _servico.AtualizarAsync(id, dados, cancellationToken);
 
-        return Ok(lista);
+        return Ok(BeneficiarioResponse.De(beneficiario));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Excluir(Guid id, CancellationToken cancellationToken)
+    {
+        await _servico.ExcluirAsync(id, cancellationToken);
+
+        return NoContent();
     }
 }
