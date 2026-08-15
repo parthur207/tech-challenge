@@ -14,7 +14,8 @@ public class PlanoServico(AppDbContext db)
         return await db.Planos
             .AsNoTracking()
             .OrderBy(p => p.Nome)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken)
+            ?? throw new NaoEncontradoException("Nenhum plano encontrado");
     }
 
     public async Task<Plano> ObterAsync(Guid id, CancellationToken cancellationToken)
@@ -49,12 +50,17 @@ public class PlanoServico(AppDbContext db)
     {
         var plano = await ObterAsync(id, cancellationToken);
 
+        if (plano.ExcluidoEm.HasValue)
+        {
+            throw new NaoProcessavelException(
+                "Plano já se encontra excluído",
+                [new DetalheErro("id", "ja_excluido")]);
+        }
+
         plano.Excluir();
         await SalvarAsync(cancellationToken);
     }
 
-    // Nome e código de registro ANS continuam ocupados depois da exclusão lógica,
-    // por isso a verificação ignora o filtro de consulta.
     private async Task GarantirUnicidadeAsync(Plano plano, CancellationToken cancellationToken)
     {
         var conflito = await db.Planos
@@ -75,8 +81,6 @@ public class PlanoServico(AppDbContext db)
             [new DetalheErro(campo, "duplicado")]);
     }
 
-    // A verificação acima não elimina a corrida entre duas requisições simultâneas.
-    // A garantia real é o índice único no banco; aqui a violação vira 409.
     private async Task SalvarAsync(CancellationToken cancellationToken)
     {
         try
