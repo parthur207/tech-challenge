@@ -214,19 +214,19 @@ public class BeneficiariosTests(ApiFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Listar_sem_informar_tamanho_deve_devolver_20_itens_por_pagina()
+    public async Task Listar_sem_informar_tamanho_deve_devolver_10_itens_por_pagina()
     {
         await fixture.SemearBeneficiariosAsync(25);
 
         var corpo = await (await Client.GetAsync("/beneficiarios")).CorpoAsync();
 
-        Assert.Equal(20, corpo.GetProperty("dados").GetArrayLength());
-        Assert.Equal(20, corpo.GetProperty("tamanho").GetInt32());
+        Assert.Equal(10, corpo.GetProperty("dados").GetArrayLength());
+        Assert.Equal(10, corpo.GetProperty("tamanho").GetInt32());
         Assert.Equal(25, corpo.GetProperty("total").GetInt32());
     }
 
     [Fact]
-    public async Task Atualizar_dados_de_beneficiario_inativo_deve_devolver_200()
+    public async Task Atualizar_dados_cadastrais_de_beneficiario_inativo_deve_devolver_409()
     {
         var beneficiario = (await fixture.SemearBeneficiariosAsync(
             1, Planos.Bronze, "INATIVO", 500)).Single();
@@ -239,9 +239,127 @@ public class BeneficiariosTests(ApiFixture fixture) : IAsyncLifetime
             Status = "INATIVO"
         }));
 
+        Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Atualizar_apenas_o_status_de_beneficiario_inativo_deve_devolver_200()
+    {
+        var beneficiario = (await fixture.SemearBeneficiariosAsync(
+            1, Planos.Bronze, "INATIVO", 500)).Single();
+
+        var resposta = await Client.PutAsync($"/beneficiarios/{beneficiario.Id}", Http.Json(new
+        {
+            beneficiario.NomeCompleto,
+            DataNascimento = beneficiario.DataNascimento.ToString("yyyy-MM-dd"),
+            beneficiario.PlanoId,
+            Status = "ATIVO"
+        }));
+
         Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
 
         var corpo = await resposta.CorpoAsync();
-        Assert.Equal("Nome Corrigido do Inativo", corpo.GetProperty("nome_completo").GetString());
+        Assert.Equal("ATIVO", corpo.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Criar_simultaneamente_com_mesmo_cpf_deve_garantir_unicidade()
+    {
+        var cpf = GeradorDeCpf.Gerar(777);
+
+        var respostas = await Task.WhenAll(
+            Client.PostAsync("/beneficiarios", Http.Json(CorpoDeCriacao(cpf))),
+            Client.PostAsync("/beneficiarios", Http.Json(CorpoDeCriacao(cpf))));
+
+        Assert.Single(respostas, r => r.StatusCode == HttpStatusCode.Created);
+        Assert.Single(respostas, r => r.StatusCode == HttpStatusCode.Conflict);
+
+        var listagem = await (await Client.GetAsync($"/beneficiarios?tamanho=50")).CorpoAsync();
+        Assert.Equal(1, listagem.GetProperty("dados").EnumerateArray().Count(b => b.GetProperty("cpf").GetString() == cpf));
+    }
+
+
+    [Fact]
+    public async Task Criar_com_cpf_de_sequencia_repetida_deve_devolver_400()
+    {
+        var resposta = await Client.PostAsync("/beneficiarios", Http.Json(CorpoDeCriacao("11111111111")));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Criar_com_data_de_nascimento_no_futuro_deve_devolver_400()
+    {
+        var amanha = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd");
+
+        var resposta = await Client.PostAsync("/beneficiarios", Http.Json(new
+        {
+            NomeCompleto = "Maria Aparecida da Silva",
+            Cpf = GeradorDeCpf.Gerar(778),
+            DataNascimento = amanha,
+            PlanoId = Planos.Bronze
+        }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Listar_com_pagina_menor_que_1_deve_devolver_400()
+    {
+        var resposta = await Client.GetAsync("/beneficiarios?pagina=0");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Listar_com_tamanho_fora_do_intervalo_deve_devolver_400()
+    {
+        var resposta = await Client.GetAsync("/beneficiarios?tamanho=101");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Listar_deve_percorrer_todas_as_paginas_sem_repetir_ou_perder_registro()
+    {
+        await fixture.SemearBeneficiariosAsync(23);
+
+        var ids = new HashSet<Guid>();
+
+        for (var pagina = 1; pagina <= 3; pagina++)
+        {
+            var corpo = await (await Client.GetAsync($"/beneficiarios?pagina={pagina}&tamanho=10")).CorpoAsync();
+
+            foreach (var item in corpo.GetProperty("dados").EnumerateArray())
+            {
+                Assert.True(ids.Add(item.GetProperty("id").GetGuid()));
+            }
+        }
+
+        Assert.Equal(23, ids.Count);
+    }
+
+    [Fact]
+    public async Task Criar_com_plano_excluido_deve_devolver_422()
+    {
+        await Client.DeleteAsync($"/planos/{Planos.Diamante}");
+
+        var resposta = await Client.PostAsync(
+            "/beneficiarios",
+            Http.Json(CorpoDeCriacao(GeradorDeCpf.Gerar(779), Planos.Diamante)));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Beneficiario_vinculado_a_plano_excluido_posteriormente_continua_valido()
+    {
+        var beneficiario = (await fixture.SemearBeneficiariosAsync(1, Planos.Diamante)).Single();
+
+        await Client.DeleteAsync($"/planos/{Planos.Diamante}");
+
+        var resposta = await Client.GetAsync($"/beneficiarios/{beneficiario.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
     }
 }
