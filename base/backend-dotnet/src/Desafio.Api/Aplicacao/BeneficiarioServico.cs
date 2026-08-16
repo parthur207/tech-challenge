@@ -152,7 +152,7 @@ public class BeneficiarioServico(AppDbContext _db)
         }
     }
 
-    //nao entendi isso aqui
+    //Validação se os dados cadastrais foram alterados, para impedir que um beneficiário inativo tenha seus dados alterados
     private static bool DadosCadastraisMudaram(Beneficiario atual, BeneficiarioAtualizacaoDados dados) =>
         atual.NomeCompleto != dados.NomeCompleto?.Trim() ||
         atual.DataNascimento.ToString() != dados.DataNascimento?.Trim() ||

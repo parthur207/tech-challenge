@@ -1,0 +1,12 @@
+{
+  "identificador": "parthur207",
+  "nome": "Paulo Andrade",
+  "email": "parthur207@gmail.com",
+  "imagem_api": "parthur207/desafio-4tech-api:1.0.0",
+  "imagem_web": "parthur207/desafio-4tech-web:1.0.0",
+  "stack": [
+    "dotnet-10",
+    "postgres-17",
+    "angular-20"
+  ]
+}
