@@ -54,7 +54,7 @@ public class BeneficiariosController(BeneficiarioServico _servico) : ControllerB
         var dados = new BeneficiarioCriacaoDados(
             requisicao.NomeCompleto,
             requisicao.Cpf,
-            requisicao.DataNascimento.ToString(),
+            requisicao.DataNascimento?.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture),
             requisicao.PlanoId!.Value);
 
         var beneficiario = await _servico.CriarAsync(dados, cancellationToken);
@@ -75,7 +75,7 @@ public class BeneficiariosController(BeneficiarioServico _servico) : ControllerB
     {
         var dados = new BeneficiarioAtualizacaoDados(
             requisicao.NomeCompleto,
-            requisicao.DataNascimento.ToString(),
+            requisicao.DataNascimento?.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture),
             requisicao.PlanoId!.Value,
             requisicao.Status);
 

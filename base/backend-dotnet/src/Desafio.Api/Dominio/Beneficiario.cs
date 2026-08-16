@@ -87,8 +87,7 @@ public class Beneficiario
 
     private DateOnly? ValidarDataNascimento(string? dataNascimento, List<DetalheErro> detalhes)
     {
-        if (!DateOnly.TryParseExact(dataNascimento.ToString(), 
-            "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var data))
+        if (!DateOnly.TryParseExact(dataNascimento, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var data))
         {
             detalhes.Add(new DetalheErro("DataNascimento", "formato_invalido"));
             return null;
