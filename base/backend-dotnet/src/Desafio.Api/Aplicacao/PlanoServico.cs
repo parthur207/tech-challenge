@@ -20,8 +20,17 @@ public class PlanoServico(AppDbContext db)
 
     public async Task<Plano> ObterAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await db.Planos.FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-               ?? throw new NaoEncontradoException("Plano não encontrado");
+        var plano = await db.Planos
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        if (plano is null)
+            throw new NaoEncontradoException("Plano não encontrado");
+
+        if (plano.ExcluidoEm is not null)
+            throw new ValidacaoException("O plano se encontra excluído");
+
+        return plano;
     }
 
     public async Task<Plano> CriarAsync(PlanoRequestDados dados, CancellationToken cancellationToken)
@@ -49,13 +58,6 @@ public class PlanoServico(AppDbContext db)
     public async Task ExcluirAsync(Guid id, CancellationToken cancellationToken)
     {
         var plano = await ObterAsync(id, cancellationToken);
-
-        if (plano.ExcluidoEm.HasValue)
-        {
-            throw new NaoProcessavelException(
-                "Plano já se encontra excluído",
-                [new DetalheErro("id", "ja_excluido")]);
-        }
 
         plano.Excluir();
         await SalvarAsync(cancellationToken);
