@@ -36,7 +36,7 @@ namespace Desafio.Api.Infraestrutura.Migrations
                     b.Property<DateTime>("DataCadastro")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly>("DataNascimento")
+                    b.Property<DateOnly?>("DataNascimento")
                         .HasColumnType("date");
 
                     b.Property<DateTime?>("ExcluidoEm")
