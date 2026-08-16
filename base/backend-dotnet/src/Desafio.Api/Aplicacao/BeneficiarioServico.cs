@@ -83,7 +83,12 @@ public class BeneficiarioServico(AppDbContext _db)
         await GarantirPlanoValidoAsync(dados.PlanoId, cancellationToken);
 
         beneficiario.AtualizarDadosCadastrais(dados.NomeCompleto, dados.DataNascimento, dados.PlanoId);
-        beneficiario.AlterarStatus(dados.Status);
+
+        if( beneficiario.Status != dados.Status)
+        {
+            beneficiario.AlterarStatus(dados.Status);
+
+        }
 
         await SalvarAsync(cancellationToken);
 
