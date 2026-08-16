@@ -3,7 +3,7 @@
 
   <label>
     Nome completo
-    <input type="text" formControlName="nomeCompleto" />
+    <input type="text" formControlName="nomeCompleto" (input)="mascararNome($event)"/>
   </label>
   @if (formulario.controls.nomeCompleto.touched && formulario.controls.nomeCompleto.invalid) {
     <p class="aviso erro">Informe um nome completo entre 3 e 120 caracteres.</p>
@@ -11,7 +11,7 @@
 
   <label>
     CPF
-    <input type="text" formControlName="cpf" maxlength="11" />
+    <input type="text" formControlName="cpf" maxlength="11" inputmode="numeric" (input)="mascararCpf($event)" />
   </label>
   @if (formulario.controls.cpf.touched && formulario.controls.cpf.invalid) {
     <p class="aviso erro">Informe um CPF com 11 dígitos numéricos, sem pontuação.</p>

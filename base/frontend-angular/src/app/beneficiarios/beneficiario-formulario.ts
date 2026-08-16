@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -10,13 +10,14 @@ import {
 } from '@angular/forms';
 
 import { mensagemDeErro } from '../nucleo/api';
+import { cpfValido } from '../nucleo/cpf';
 import { Plano } from '../planos/plano';
 import { Beneficiario, StatusBeneficiario } from './beneficiario';
 import { BeneficiarioServico } from './beneficiario-servico';
 
 function cpfValidator(controle: AbstractControl): ValidationErrors | null {
   const valor = (controle.value ?? '').toString().trim();
-  return /^[0-9]{11}$/.test(valor) ? null : { cpfInvalido: true };
+  return cpfValido(valor) ? null : { cpfInvalido: true };
 }
 
 function dataPassadaValidator(controle: AbstractControl): ValidationErrors | null {
@@ -38,7 +39,7 @@ function dataPassadaValidator(controle: AbstractControl): ValidationErrors | nul
   templateUrl: './beneficiario-formulario.html',
   styleUrl: './beneficiario-formulario.css'
 })
-export class BeneficiarioFormulario {
+export class BeneficiarioFormulario implements OnInit {
   private readonly servico = inject(BeneficiarioServico);
   private readonly fb = inject(FormBuilder);
 
@@ -61,7 +62,7 @@ export class BeneficiarioFormulario {
     status: ['ATIVO' as StatusBeneficiario]
   });
 
-  constructor() {
+  ngOnInit(): void {
     if (this.beneficiario) {
       this.formulario.patchValue({
         nomeCompleto: this.beneficiario.nome_completo,
@@ -76,6 +77,25 @@ export class BeneficiarioFormulario {
 
   protected get editando(): boolean {
     return this.beneficiario !== null;
+  }
+
+  protected mascararNome(evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const semNumeros = campo.value.replace(/[0-9]/g, '');
+
+    if (semNumeros !== campo.value) {
+      this.formulario.controls.nomeCompleto.setValue(semNumeros);
+    }
+  }
+
+  /** Máscara: aceita só dígitos no CPF, com no máximo 11, filtrando o que foi digitado ou colado. */
+  protected mascararCpf(evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const somenteDigitos = campo.value.replace(/\D/g, '').slice(0, 11);
+
+    if (somenteDigitos !== campo.value) {
+      this.formulario.controls.cpf.setValue(somenteDigitos);
+    }
   }
 
   protected salvar(): void {
