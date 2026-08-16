@@ -44,8 +44,6 @@ public class Beneficiario
 
     public Guid PlanoId { get; private set; }
 
-    public Plano? Plano { get; private set; }
-
     public DateTime DataCadastro { get; private set; }
     public DateTime? ExcluidoEm { get; private set; }
 
@@ -123,7 +121,7 @@ public class Beneficiario
         ExcluidoEm = DateTime.UtcNow;
     }
 
-    public void AtualizarDadosCadastrais(string? nomeCompleto, string? dataNascimento, Guid PlanoId)
+    public void AtualizarDadosCadastrais(string? nomeCompleto, string? dataNascimento, Guid planoId)
     {
         var detalhes = new List<DetalheErro>();
 
@@ -138,7 +136,7 @@ public class Beneficiario
 
         NomeCompleto = nomeCompleto!.Trim();
         DataNascimento = dataNasc!.Value;
-        PlanoId = PlanoId;
+        PlanoId = planoId;
     }
     private bool CpfValido(string cpf)
     {

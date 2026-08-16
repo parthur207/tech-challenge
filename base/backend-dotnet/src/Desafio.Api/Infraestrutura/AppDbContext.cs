@@ -29,7 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entidade.HasIndex(b => b.Cpf).IsUnique();
             entidade.HasQueryFilter(b => b.ExcluidoEm == null);
             entidade.Property(b => b.Status).HasConversion<string>().HasMaxLength(10).IsRequired();
-            entidade.HasOne(b => b.Plano)
+            entidade.HasOne<Plano>()
                 .WithMany()
                 .HasForeignKey(b => b.PlanoId)
                 .OnDelete(DeleteBehavior.Restrict);

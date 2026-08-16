@@ -36,7 +36,7 @@ namespace Desafio.Api.Infraestrutura.Migrations
                     b.Property<DateTime>("DataCadastro")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly?>("DataNascimento")
+                    b.Property<DateOnly>("DataNascimento")
                         .HasColumnType("date");
 
                     b.Property<DateTime?>("ExcluidoEm")
@@ -97,13 +97,11 @@ namespace Desafio.Api.Infraestrutura.Migrations
 
             modelBuilder.Entity("Desafio.Api.Dominio.Beneficiario", b =>
                 {
-                    b.HasOne("Desafio.Api.Dominio.Plano", "Plano")
+                    b.HasOne("Desafio.Api.Dominio.Plano", null)
                         .WithMany()
                         .HasForeignKey("PlanoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Plano");
                 });
 #pragma warning restore 612, 618
         }
