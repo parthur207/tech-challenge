@@ -158,10 +158,21 @@ public class BeneficiarioServico(AppDbContext _db)
     }
 
     //Validação se os dados cadastrais foram alterados, para impedir que um beneficiário inativo tenha seus dados alterados
-    private static bool DadosCadastraisMudaram(Beneficiario atual, BeneficiarioAtualizacaoDados dados) =>
-        atual.NomeCompleto != dados.NomeCompleto?.Trim() ||
-        atual.DataNascimento.ToString() != dados.DataNascimento?.Trim() ||
-        atual.PlanoId != dados.PlanoId;
+    private static bool DadosCadastraisMudaram(
+     Beneficiario atual,
+     BeneficiarioAtualizacaoDados dados)
+    {
+        var dataNascimento = dados.DataNascimento is null
+            ? (DateOnly?)null
+            : DateOnly.ParseExact(
+                dados.DataNascimento.Trim(),
+                "dd-MM-yyyy",
+                CultureInfo.InvariantCulture);
+
+        return atual.NomeCompleto != dados.NomeCompleto?.Trim() ||
+               atual.DataNascimento != dataNascimento ||
+               atual.PlanoId != dados.PlanoId;
+    }
 
     private async Task SalvarAsync(CancellationToken cancellationToken)
     {

@@ -28,7 +28,7 @@ public class PlanoServico(AppDbContext db)
             throw new NaoEncontradoException("Plano não encontrado");
 
         if (plano.ExcluidoEm is not null)
-            throw new ValidacaoException("O plano se encontra excluído");
+            throw new NaoEncontradoException("O plano se encontra excluído");
 
         return plano;
     }
