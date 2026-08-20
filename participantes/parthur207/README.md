@@ -12,8 +12,7 @@ combináveis e criação de DTOs seguindo o mesmo padrão de "Planos".
 Testes: Foi realizado mudanças e inserções de muitos testes afim de atingir maior abrangencia das funcionalidades do sistema. Incialmente, a ideia foi ler e entender na especificação citações sobre as regras de negócio para posteriormente replicar e cobrir tudo com os testes. Foi utilizado a IA com maior intensidade nos testes, onde optei pela prática SDD, visando detalhar com precisão as diretrizes e o fluxo das funcionalidades. 
 Dentre os ajustes, o teste que antes permitia atualizar dados de um beneficiário inativo foi revertido, retornando (409: conflict) caso entrasse nessas condições. Adjunto, foi feito adição de testes para certificar que concorrencias em criação de beneficiários garantissem a unicidade de cpfs, assim como, para cobrir formatos erroneos dos cpfs. Foi feito tambem uma abrangencia que testava os métodos de domínio (métodos que criei dentro das entidades "beneficiario"/"plano") e testabilidade de operações que envolvessem um "Plano" com o atributo "ExcluidoEm". No mais, o foco se deu a testes ao backend, e a spec não relatou a necessidade de ter para o front.
 
-Front-end: No front foi finalizado a parte de Beneficiários, sendo implementado as features de listagem, filtros, paginação, formulário de cadastro/edição no mesmo padrão do bloco de
-Planos. Quanto ao módulo dos planos, fiz pequenas correções, como o importação de DestroyRef para que durante o fluxo não ocorrer falhas durante carregamentos fora do construtor.
+Front-end: No front foi finalizado a parte de Beneficiários, sendo implementado as features de listagem, filtros, máscaras atreladas aos campos, paginação, formulário de cadastro/edição no mesmo padrão do bloco de planos. Quanto ao módulo dos planos, fiz pequenas correções, como o importação de DestroyRef para que durante o fluxo não ocorrer falhas durante carregamentos fora do construtor.
 
 ---
 
@@ -44,6 +43,8 @@ plano de cada item com dentro de um foreach, consequentemente, eram feitas varia
 ".pipe(takeUntilDestroyed())" sem argumento, e é disparado tanto no construtor quanto pelo
 clique em "Recarregar". Essa forma só é válida dentro de um contexto de injeção, então clicar em "Recarregar" lançaria (NG0203) em runtime. A correção foi importar "DestroyRef" num campo e passando explicitamente (takeUntilDestroyed(this.destroyRef)), nos
 três componentes.
+
+- Front-End — Ausência de máscaras: Existe a possibilidade de inserção de dados incorretos diretamente pela UI, devido à ausência de validações no front-end. Essa limitação pode comprometer a integridade dos dados na camada de interface. A adoção de uma dupla validação (UI e API) reduz esse risco, permitindo que apenas requisições maliciosas ou fora do fluxo esperado cheguem diretamente à API. Além disso, o uso de máscaras reduz a ocorrência de entradas inválidas e, consequentemente, a quantidade de requisições desnecessárias ao servidor.
 
 ### 2.2 Pontos em que a especificação não definiu o comportamento
 
